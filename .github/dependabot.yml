@@ -1,0 +1,30 @@
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Dependabot reads this file from the default branch only, so the schedules below
+# start once this lands there.
+version: 2
+
+updates:
+  # The gemspec and the development group of the Gemfile.
+  - package-ecosystem: bundler
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # The tools of the suite move together, so they arrive as one pull request.
+      # A runtime dependency is left on its own: raising what the gem asks of its
+      # host is a decision, not a chore.
+      development-dependencies:
+        dependency-type: development
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns:
+          - "*"
