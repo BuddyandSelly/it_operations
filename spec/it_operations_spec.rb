@@ -5,14 +5,29 @@ require 'spec_helper'
 RSpec.describe ItOperations do
   let(:operation_klass) { ItOperations::ItOperation }
   it 'has a version number' do
-    expect(ItOperations::VERSION).not_to be nil
+    expect(ItOperations::VERSION).not_to be_nil
   end
 
-  it '.entities_for_operation' do
-    entity = operation_klass.create(entity_id: 1, entity_class: 'Test', operation: 'create entity')
-    it_operation = operation_klass.create(entity_id: entity.id, entity_class: operation_klass.name, operation: 'test')
+  describe '.entities_for_operation' do
+    it 'returns the entities the operations of that name point at' do
+      entity = operation_klass.create(entity_id: 1, entity_class: 'Test', operation: 'create entity')
+      it_operation = operation_klass.create(entity_id: entity.id, entity_class: operation_klass.name,
+                                            operation: 'test')
 
-    expect(described_class.entities_for_operation(it_operation.operation)).to eq([entity])
+      expect(described_class.entities_for_operation(it_operation.operation)).to eq([entity])
+    end
+
+    it 'returns nothing for an operation that has none' do
+      expect(described_class.entities_for_operation('nothing here')).to eq([])
+    end
+
+    it 'refuses an operation that spans more than one entity class' do
+      operation_klass.create(entity_id: 1, entity_class: 'Test', operation: 'mixed')
+      operation_klass.create(entity_id: 2, entity_class: operation_klass.name, operation: 'mixed')
+
+      expect { described_class.entities_for_operation('mixed') }
+        .to raise_error('All entities need to be the same for a given operation')
+    end
   end
 
   it '.create_from_entity_ids' do

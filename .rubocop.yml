@@ -1,7 +1,16 @@
-require: rubocop-rspec
+plugins: rubocop-rspec
+
+# RuboCop replaces its default AllCops/Exclude with the one below instead of
+# adding to it, and CI installs the bundle into vendor/bundle, where a gem with
+# a .rubocop.yml of its own would be picked up.
+inherit_mode:
+  merge:
+    - Exclude
 
 AllCops:
-  TargetRubyVersion: 2.5
+  TargetRubyVersion: 3.2
+  NewCops: enable
+  SuggestExtensions: false
 
 RSpec/BeforeAfterAll:
   Enabled: true
@@ -28,7 +37,7 @@ Layout/EndOfLine:
 
 Layout/LineLength:
   Max: 120
-  IgnoredPatterns: ['(\A|\s)#']
+  AllowedPatterns: ['(\A|\s)#']
 
 Lint/AmbiguousBlockAssociation:
   Enabled: false
@@ -38,3 +47,9 @@ Style/Documentation:
 
 RSpec/EmptyLineAfterFinalLet:
   Enabled: false
+
+# Rails dictates where a generator lives (lib/generators/<gem>/), and its spec
+# sits next to it rather than under the namespace of the class.
+RSpec/SpecFilePathFormat:
+  Exclude:
+    - 'spec/generators/**/*.rb'

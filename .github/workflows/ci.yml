@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+  pull_request:
+    paths-ignore:
+      - 'README.md'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  specs:
+    name: RSpec
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      # The suite fails when line or branch coverage drops below 100%,
+      # see spec/spec_helper.rb.
+      - name: Run tests
+        run: bundle exec rspec
+
+      - name: Read coverage
+        id: coverage
+        if: always()
+        run: |
+          ruby -rjson -e '
+            result = JSON.parse(File.read("coverage/.last_run.json"))["result"]
+            File.open(ENV["GITHUB_OUTPUT"], "a") do |out|
+              out.puts "line=#{result["line"]}"
+              out.puts "branch=#{result["branch"]}"
+            end
+          '
+
+      - name: Add coverage to the job summary
+        if: always() && steps.coverage.outcome == 'success'
+        env:
+          LINE: ${{ steps.coverage.outputs.line }}
+          BRANCH: ${{ steps.coverage.outputs.branch }}
+        run: |
+          {
+            echo "## Coverage"
+            echo
+            echo "| Metric | Coverage |"
+            echo "| --- | --- |"
+            echo "| Line | ${LINE}% |"
+            echo "| Branch | ${BRANCH}% |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the coverage report
+        if: always() && steps.coverage.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+          retention-days: 14
+
+      # Fork pull requests only get a read only token, so a missing comment
+      # must not fail the build.
+      - name: Comment coverage on the pull request
+        if: always() && github.event_name == 'pull_request' && steps.coverage.outcome == 'success'
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          LINE: ${{ steps.coverage.outputs.line }}
+          BRANCH: ${{ steps.coverage.outputs.branch }}
+        with:
+          script: |
+            const marker = '<!-- simplecov-coverage-report -->';
+            // context.sha is the ephemeral merge commit on pull_request events.
+            const headSha = context.payload.pull_request.head.sha;
+            const body = [
+              marker,
+              '## Coverage',
+              '',
+              '| Metric | Coverage |',
+              '| --- | --- |',
+              `| Line | ${process.env.LINE}% |`,
+              `| Branch | ${process.env.BRANCH}% |`,
+              '',
+              `Measured by SimpleCov on \`${headSha.substring(0, 7)}\`. `
+                + 'The full HTML report is attached to this run as the '
+                + '`coverage-report` artifact.'
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100
+            });
+            const previous = comments.find((comment) => comment.body.includes(marker));
+
+            if (previous) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: previous.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+  rubocop:
+    name: Ruby Style Guide
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Run RuboCop
+        run: bundle exec rubocop

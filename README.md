@@ -1,4 +1,4 @@
-[![RSpec tests](https://github.com/ReverseRetail/it_operations/actions/workflows/tests.yml/badge.svg)](https://github.com/ReverseRetail/it_operations/actions/workflows/tests.yml)
+[![CI](https://github.com/BuddyandSelly/it_operations/actions/workflows/ci.yml/badge.svg)](https://github.com/BuddyandSelly/it_operations/actions/workflows/ci.yml)
 [![Ruby Style Guide](https://img.shields.io/badge/code_style-rubocop-brightgreen.svg)](https://github.com/rubocop/rubocop)
 # ItOperations
 This is a feature extracted from Buddy, that was implemented in Content System and makes sense to make a gem out of it, so we can reduce code repetition and use it in different projects.
@@ -71,7 +71,23 @@ ItOperations.by_op("OTHER_OP").map(&:as_json)
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+The gem is developed and tested against the Ruby version in [.ruby-version](.ruby-version) and
+supports Ruby >= 3.2 with Rails >= 7.0.
+
+```bash
+bundle install
+bundle exec rspec    # specs, including the coverage check
+bundle exec rubocop  # style
+bundle exec rake     # both of the above
+```
+
+The specs run against an in-memory sqlite database, and each one is wrapped in a transaction that is
+rolled back afterwards. They are measured with
+[SimpleCov](https://github.com/simplecov-ruby/simplecov): line and branch coverage of everything in
+`lib/` have to stay at 100%, and the suite fails otherwise. The HTML report is written to
+`coverage/index.html`, and CI comments both percentages on every pull request.
+
+You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 

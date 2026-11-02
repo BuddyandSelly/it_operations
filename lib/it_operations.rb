@@ -2,6 +2,8 @@
 
 require_relative 'it_operations/version'
 require 'active_support'
+# SingleForwardable below, which the standard library does not load by itself.
+require 'forwardable'
 
 ActiveSupport.on_load(:active_record) do
   require 'it_operations/it_operation'
@@ -13,7 +15,10 @@ module ItOperations
 
   BATCH_SIZE = ENV.fetch('IT_OPERATIONS_BATCH_SIZE', 1000).to_i
 
-  def_delegators ItOperation, :by_op, :processed, :unprocessed, :unsuccessful, :successful
+  # ItOperation is an ActiveRecord model, so it is only required once active record
+  # itself is loaded, see the hook above. Naming the target as a string leaves the
+  # constant to be resolved on the first call instead of here.
+  def_delegators 'ItOperations::ItOperation', :by_op, :processed, :unprocessed, :unsuccessful, :successful
 
   def self.entities_for_operation(operation)
     entities_by_operation = by_op(operation).group(:entity_class).count
@@ -25,7 +30,7 @@ module ItOperations
     entities_by_operation.keys.first.constantize.where(id: ids)
   end
 
-  # rubocop: disable Metrics/MethodLength
+  # rubocop: disable-next Metrics/MethodLength
   def self.create_from_entity_ids(entity_ids, entity_class, operation)
     date = Time.now
     base = {
@@ -44,7 +49,6 @@ module ItOperations
       end)
     end
   end
-  # rubocop: enable Metrics/MethodLength
 
   # Helper method to reduce "boilerplate" around executing an operation
   #

@@ -6,7 +6,7 @@ RSpec.describe ItOperations::ItOperation do
   describe '.mark_successful' do
     it 'mark itself as successful' do
       it_operation.mark_successful
-      expect(it_operation.successful).to eq(true)
+      expect(it_operation.successful).to be(true)
     end
 
     it 'bang version (!) calls mark_successful and persists' do
@@ -18,7 +18,7 @@ RSpec.describe ItOperations::ItOperation do
 
     it 'mark itself as processed' do
       it_operation.mark_successful
-      expect(it_operation.processed).to eq(true)
+      expect(it_operation.processed).to be(true)
     end
 
     it 'can set result with message' do
@@ -31,7 +31,7 @@ RSpec.describe ItOperations::ItOperation do
   describe '.mark_failed' do
     it 'mark itself as not successful' do
       it_operation.mark_failed
-      expect(it_operation.successful).to eq(false)
+      expect(it_operation.successful).to be(false)
     end
 
     it 'bang version (!) calls mark_failed and persists' do
@@ -43,7 +43,7 @@ RSpec.describe ItOperations::ItOperation do
 
     it 'mark itself as processed' do
       it_operation.mark_failed
-      expect(it_operation.processed).to eq(true)
+      expect(it_operation.processed).to be(true)
     end
 
     it 'can set result with message' do
@@ -64,4 +64,6 @@ RSpec.describe ItOperations::ItOperation do
   end
 end
 
-class Test; end
+# A stand-in for an application model: the specs only ever name it, as the
+# entity_class of an operation.
+Test = Class.new

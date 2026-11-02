@@ -1,9 +1,20 @@
 # frozen_string_literal: true
 
-require 'forwardable'
+require 'simplecov'
+
+SimpleCov.start do
+  enable_coverage :branch
+  primary_coverage :branch
+
+  # Everything the gem ships has to be covered, whether it was loaded or not.
+  cover 'lib/**/*.rb'
+  skip 'lib/it_operations/version.rb'
+
+  minimum_coverage line: 100, branch: 100
+end
+
 require 'bundler/setup'
 require 'active_record'
-require 'byebug'
 require 'database_cleaner/active_record'
 
 ActiveRecord::Base.logger = ActiveSupport::Logger.new(nil)
@@ -21,7 +32,6 @@ ActiveRecord::Migration.create_table :it_operations do |t|
   t.timestamps null: false
 end
 
-require 'it_operations/it_operation'
 require 'it_operations'
 
 RSpec.configure do |config|
